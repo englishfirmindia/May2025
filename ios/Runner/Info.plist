@@ -4,7 +4,27 @@
 <dict>
     <key>MinimumOSVersion</key>
     <string>13.0</string>
+	<key>GIDClientID</key>
+
+	<string>1048932909250-s88ojcftvrqt0mq3gnigr554h24hfu5s.apps.googleusercontent.com</string>
 	
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.1048932909250-s88ojcftvrqt0mq3gnigr554h24hfu5s</string>
+			</array>
+		</dict>
+	</array>
+		
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>This app uses speech recognition to process your voice input for converting speech to text.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app requires access to the microphone for recording purposes.</string>
+		
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

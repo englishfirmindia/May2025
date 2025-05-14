@@ -33,6 +33,23 @@ class AuthProvider with ChangeNotifier {
     return false;
   }
 
+  Future<bool> signInWithGoogle() async {
+    final firebaseUser = await _authService.signInWithGoogle();
+    if (firebaseUser != null) {
+      _user = await _firestoreService.getUser(firebaseUser.uid);
+      if (_user == null) {
+        // New user, save their data
+        final name = firebaseUser.displayName ?? 'User';
+        final email = firebaseUser.email ?? '';
+        await _firestoreService.saveUserData(firebaseUser.uid, name, email);
+        _user = AppUser(uid: firebaseUser.uid, name: name, email: email);
+      }
+      notifyListeners();
+      return true;
+    }
+    return false;
+  }
+
   Future<void> logout() async {
     await _authService.signOut();
     _user = null;

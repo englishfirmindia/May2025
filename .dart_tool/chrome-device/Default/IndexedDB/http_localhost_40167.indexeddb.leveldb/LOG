@@ -1,6 +1,13 @@
-2025/04/28-21:48:35.614 e977 Creating DB /tmp/flutter_tools.MYNCYM/flutter_tools_chrome_device.EQUJNM/Default/IndexedDB/http_localhost_40167.indexeddb.leveldb since it was missing.
-2025/04/28-21:48:35.625 e977 Reusing MANIFEST /tmp/flutter_tools.MYNCYM/flutter_tools_chrome_device.EQUJNM/Default/IndexedDB/http_localhost_40167.indexeddb.leveldb/MANIFEST-000001
-2025/04/28-21:48:35.631 e977 Level-0 table #5: started
-2025/04/28-21:48:35.632 e977 Level-0 table #5: 1311 bytes OK
-2025/04/28-21:48:35.634 e977 Delete type=0 #3
-2025/04/28-21:48:35.634 e983 Manual compaction at level-0 from '\x00\x01\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x02\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/05/07-04:13:30.738 a3fa Reusing MANIFEST /tmp/flutter_tools.JYGUHD/flutter_tools_chrome_device.JBLLEM/Default/IndexedDB/http_localhost_40167.indexeddb.leveldb/MANIFEST-000001
+2025/05/07-04:13:30.738 a3fa Recovering log #4
+2025/05/07-04:13:30.738 a3fa Reusing old log /tmp/flutter_tools.JYGUHD/flutter_tools_chrome_device.JBLLEM/Default/IndexedDB/http_localhost_40167.indexeddb.leveldb/000004.log 
+2025/05/07-04:13:30.751 a3fa Level-0 table #8: started
+2025/05/07-04:13:30.752 a3fa Level-0 table #8: 4737 bytes OK
+2025/05/07-04:13:30.754 a3fa Delete type=0 #4
+2025/05/07-04:13:30.754 a3f9 Manual compaction at level-0 from '\x00\x04\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x05\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/05/07-04:15:38.753 a3fa Compacting 1@1 + 1@2 files
+2025/05/07-04:15:38.760 a3fa Generated table #9@1: 38 keys, 1168 bytes
+2025/05/07-04:15:38.760 a3fa Compacted 1@1 + 1@2 files => 1168 bytes
+2025/05/07-04:15:38.761 a3fa compacted to: files[ 0 0 1 0 0 0 0 ]
+2025/05/07-04:15:38.762 a3fa Delete type=2 #5
+2025/05/07-04:15:38.762 a3fa Delete type=2 #8

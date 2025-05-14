@@ -113,14 +113,7 @@ class _SignupPageState extends State<SignupPage> with SingleTickerProviderStateM
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.white,
-              Colors.grey[200]!,
-            ],
-          ),
+          color: Colors.white,
         ),
         child: Center(
           child: SingleChildScrollView(
@@ -142,8 +135,8 @@ class _SignupPageState extends State<SignupPage> with SingleTickerProviderStateM
                   child: Card(
                     elevation: 4.0,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
-                    color: Colors.white,
-                    shadowColor: Colors.green[400]!.withOpacity(0.5),
+                    color: Colors.white.withOpacity(0.9),
+                    shadowColor: Colors.blue[200]!.withOpacity(0.3),
                     child: Padding(
                       padding: const EdgeInsets.all(24.0),
                       child: Column(
@@ -219,7 +212,7 @@ class _SignupPageState extends State<SignupPage> with SingleTickerProviderStateM
                           const SizedBox(height: 16),
                           TextButton(
                             onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
-                            child: const Text(
+                            child: Text(
                               'Already have an account? Login',
                               style: TextStyle(color: Color.fromARGB(255, 0, 2, 0)),
                             ),

@@ -82,14 +82,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> with SingleTick
       ),
       body: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.white,
-              Colors.grey[200]!,
-            ],
-          ),
+          color: Colors.white,
         ),
         child: Center(
           child: SingleChildScrollView(
@@ -111,8 +104,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> with SingleTick
                   child: Card(
                     elevation: 4.0,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
-                    color: Colors.white,
-                    shadowColor: Colors.green[400]!.withOpacity(0.5),
+                    color: Colors.white.withOpacity(0.9),
+                    shadowColor: Colors.blue[200]!.withOpacity(0.3),
                     child: Padding(
                       padding: const EdgeInsets.all(24.0),
                       child: Column(

@@ -1,0 +1,7 @@
+2025/05/15-00:14:10.892 88cc Creating DB /tmp/flutter_tools.ASUBRA/flutter_tools_chrome_device.OUCOSY/Default/IndexedDB/http_localhost_36747.indexeddb.leveldb since it was missing.
+2025/05/15-00:14:10.900 88cc Reusing MANIFEST /tmp/flutter_tools.ASUBRA/flutter_tools_chrome_device.OUCOSY/Default/IndexedDB/http_localhost_36747.indexeddb.leveldb/MANIFEST-000001
+2025/05/15-00:14:10.905 88d8 Level-0 table #5: started
+2025/05/15-00:14:10.906 88d8 Level-0 table #5: 1311 bytes OK
+2025/05/15-00:14:10.908 88d8 Delete type=0 #3
+2025/05/15-00:14:10.908 88ce Manual compaction at level-0 from '\x00\x01\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x02\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/05/15-00:14:42.695 88cc Manual compaction at level-0 from '\x00\x04\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x05\x00\x00\x00' @ 0 : 0; will stop at (end)

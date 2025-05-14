@@ -57,19 +57,25 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     }
   }
 
+  Future<void> _signInWithGoogle() async {
+    final provider = Provider.of<AuthProvider>(context, listen: false);
+    final success = await provider.signInWithGoogle();
+    if (success) {
+      final user = provider.user!;
+      Navigator.pushReplacementNamed(context, user.isAdmin ? '/admin' : '/user');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Google Sign-In failed. Please try again.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.white,
-              Colors.grey[200]!,
-            ],
-          ),
+          color: Colors.white,
         ),
         child: Center(
           child: SingleChildScrollView(
@@ -91,8 +97,8 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                   child: Card(
                     elevation: 4.0,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
-                    color: Colors.white,
-                    shadowColor: Colors.green[400]!.withOpacity(0.5),
+                    color: Colors.white.withOpacity(0.9),
+                    shadowColor: Colors.blue[200]!.withOpacity(0.3),
                     child: Padding(
                       padding: const EdgeInsets.all(24.0),
                       child: Column(
@@ -148,11 +154,42 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                             ),
                           ),
                           const SizedBox(height: 16),
+                          GestureDetector(
+                            onTapDown: (_) => _animationController.reverse(),
+                            onTapUp: (_) {
+                              _animationController.forward();
+                              _signInWithGoogle();
+                            },
+                            onTapCancel: () => _animationController.forward(),
+                            child: ScaleTransition(
+                              scale: _scaleAnimation,
+                              child: ElevatedButton.icon(
+                                onPressed: _signInWithGoogle,
+                                icon: Image.asset(
+                                  'assets/images/google_logo.png',
+                                  height: 24,
+                                  width: 24,
+                                ),
+                                label: const Text('Login in with Google'),
+                                style: ElevatedButton.styleFrom(
+                                  foregroundColor: Colors.black,
+                                  backgroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    side: const BorderSide(color: Colors.grey),
+                                  ),
+                                  minimumSize: const Size(double.infinity, 50),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
                           TextButton(
                             onPressed: () => Navigator.pushNamed(context, '/signup'),
-                            child: const Text(
+                            child: Text(
                               'Don’t have an account? Sign Up',
-                              style: TextStyle(color: Color.fromARGB(255, 0, 2, 0)),
+                              style: TextStyle(color: Colors.blue[600]),
                             ),
                           ),
                         ],

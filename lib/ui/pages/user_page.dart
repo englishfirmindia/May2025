@@ -1,3 +1,4 @@
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -11,7 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:in_app_update/in_app_update.dart';
-import 'package:flutter_linkify/flutter_linkify.dart'; // Added for clickable links
+import 'package:flutter_linkify/flutter_linkify.dart';
 import 'login_page.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -69,7 +70,7 @@ class _UserPageState extends State<UserPage> with SingleTickerProviderStateMixin
     try {
       await dotenv.load(fileName: "assets/.env");
       setState(() {
-        apiKey = dotenv.env['OPENAI_API_KEY'];
+        apiKey = dotenv.env['GEMINI_API_KEY'];
         _isLoading = false;
         if (apiKey == null || apiKey!.isEmpty) {
           Fluttertoast.showToast(msg: "API Key not found in .env file");
@@ -266,78 +267,43 @@ class _UserPageState extends State<UserPage> with SingleTickerProviderStateMixin
   }
 
   Future<String> _getAIResponse(String userInput) async {
-    const String model = "gpt-4o-search-preview";
-    final String url = "https://api.openai.com/v1/chat/completions";
-    final user = FirebaseAuth.instance.currentUser;
-    String userName = 'User';
+    final String url ="https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:generateContent?key=$apiKey";
 
-  if (user != null) {
-    final doc = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .get();
-
-    if (doc.exists) {
-      userName = doc.data()?['name'] ?? user.email ?? 'User';
-    } else {
-      userName = user.email ?? 'User';
-    }
-  }
-   
 
     final Map<String, dynamic> requestBody = {
-    "model": model,
-    "web_search_options": {
-      "user_location": {
-        "type": "approximate",
-        "approximate": {
-          "country": "AU",
-          "city": "Parramatta",
-          "region": "New South Wales"
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "You are an AI assistant created by the Englishfirm AI team to help students prepare for the PTE exam. "
+                  "Your responses should be clear, concise, and relevant to PTE-related topics. "
+                  "If a question is unrelated to the PTE exam, respond with: 'I am designed to answer PTE-related questions only.' "
+                  "\n\nStudent's query:\n\n$userInput"
+            }
+          ]
         }
-      }
-    },
-    "messages": [
-      {
-        "role": "system",
-        "content": """
-You are an AI assistant created by the Englishfirm AI team to help students prepare for the PTE exam.
-If a user's question is unrelated to the PTE or Englishfirm services, do not attempt to answer it. Instead, reply exactly with: $userName, please ask questions related to the PTE or Englishfirm services.
-Do not provide responses on general topics or questions outside the PTE domain.
-Your responses must always be:
-a) Clear, concise, and strictly focused on PTE-related topics or Englishfirm services.
-b) If the user's question is about any PTE institution, respond only with relevant information about Englishfirm and avoid mentioning other institutions.
-"""      },
-      {
-        "role": "user",
-        "content": userInput
-      }
-    ]
-  };
-
+      ]
+    };
 
     try {
       final response = await http.post(
         Uri.parse(url),
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer $apiKey",
-        },
+        headers: {"Content-Type": "application/json"},
         body: jsonEncode(requestBody),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        String aiResponse = data["choices"][0]["message"]["content"];
+        String aiResponse = data["candidates"][0]["content"]["parts"][0]["text"];
         aiResponse = aiResponse.replaceAll(RegExp(r'[*#]'), '');
         return aiResponse;
       } else {
-        
-        return "$userName I'm having trouble understanding your request. Please try again shortly.";
+        print('AI response failed: ${response.statusCode} - ${response.body}');
+        return "Sorry, I couldn't process your request.";
       }
     } catch (e) {
-      
-      return "Sorry, $userName something went wrong while processing your request. Please try again in a moment.";
+      print('Error in _getAIResponse: $e');
+      return "Error: ${e.toString()}";
     }
   }
 
@@ -743,40 +709,6 @@ b) If the user's question is about any PTE institution, respond only with releva
     );
   }
 
-  Widget _buildCustomButton({
-    required VoidCallback onPressed,
-    required IconData icon,
-    required Color backgroundColor,
-    double scale = 1.0,
-  }) {
-    return GestureDetector(
-      onTapDown: (_) {
-        setState(() => scale = 0.95);
-      },
-      onTapUp: (_) {
-        setState(() => scale = 1.0);
-        onPressed();
-      },
-      onTapCancel: () {
-        setState(() => scale = 1.0);
-      },
-      child: AnimatedScale(
-        scale: scale,
-        duration: const Duration(milliseconds: 100),
-        child: Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(25),
-          ),
-          child: Icon(icon, color: Colors.white, size: 24),
-        ),
-      ),
-    );
-  }
-
-  // Function to handle URL launching
   Future<void> _onOpenLink(LinkableElement link) async {
     final url = Uri.parse(link.url);
     if (await canLaunchUrl(url)) {
@@ -797,32 +729,19 @@ b) If the user's question is about any PTE institution, respond only with releva
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Image.asset(
-            'assets/images/logo.jpeg',
-            width: 40,
-            height: 40,
-            errorBuilder: (context, error, stackTrace) {
-              return const Icon(Icons.error);
-            },
-          ),
+        leading: IconButton(
+          icon: const Icon(Icons.menu, color: Colors.black),
+          onPressed: () {
+            // You can implement a drawer or menu action here
+          },
         ),
-        title: const Center(
-          child: Text(
-            'Englishfirm AI Assistant',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
-          ),
+        title: const Text(
+          'Englishfirm AI Assistant',
+          style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.w500),
         ),
+        centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            border: Border(
-              bottom: BorderSide(color: Colors.black, width: 1.0),
-            ),
-          ),
-        ),
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.settings, color: Colors.black),
@@ -859,20 +778,14 @@ b) If the user's question is about any PTE institution, respond only with releva
           ),
         ],
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.white, Colors.grey[200]!],
-          ),
-        ),
-        child: Column(
-          children: [
-            Expanded(
+      body: Column(
+        children: [
+          Expanded(
+            child: Container(
+              color: Colors.grey[100],
               child: ListView.builder(
                 controller: _scrollController,
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                 itemCount: _messages.length + (_isBotTyping ? 1 : 0),
                 itemBuilder: (context, index) {
                   if (_isBotTyping && index == _messages.length) {
@@ -883,20 +796,13 @@ b) If the user's question is about any PTE institution, respond only with releva
                         curve: Curves.easeOut,
                       );
                     });
-                    return Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 10, top: 5, bottom: 5),
-                        child: Row(
-                          children: [
-                            Text(
-                              "Thinking",
-                              style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                            ),
-                            const SizedBox(width: 5),
-                            _buildTypingIndicator(),
-                          ],
-                        ),
+                    return Padding(
+                      padding: const EdgeInsets.only(left: 10, top: 5, bottom: 5),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          _buildTypingIndicator(),
+                        ],
                       ),
                     );
                   }
@@ -904,32 +810,42 @@ b) If the user's question is about any PTE institution, respond only with releva
                   final message = _messages[index];
                   return Align(
                     alignment: message["isUser"] ? Alignment.centerRight : Alignment.centerLeft,
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-                      decoration: BoxDecoration(
-                        color: message["isUser"] ? Colors.grey[700] : Colors.grey[300],
-                        borderRadius: BorderRadius.circular(15),
-                      ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 5),
                       child: message["isUser"]
-                          ? Text(
-                              message["text"] ?? '',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
+                          ? Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[300],
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(20),
+                                  bottomLeft: Radius.circular(20),
+                                  bottomRight: Radius.circular(20),
+                                ),
+                              ),
+                              child: Text(
+                                message["text"] ?? '',
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 16,
+                                ),
                               ),
                             )
-                          : Linkify(
-                              onOpen: _onOpenLink,
-                              text: message["text"] ?? '',
-                              style: const TextStyle(
-                                color: Colors.black,
-                                fontSize: 16,
-                              ),
-                              linkStyle: const TextStyle(
-                                color: Colors.blue,
-                                fontSize: 16,
-                                decoration: TextDecoration.underline,
+                          : Padding(
+                              padding: const EdgeInsets.only(left: 8, right: 16),
+                              child: Linkify(
+                                onOpen: _onOpenLink,
+                                text: message["text"] ?? '',
+                                style: TextStyle(
+                                  color: Colors.black87,
+                                  fontSize: 16,
+                                  height: 1.5,
+                                ),
+                                linkStyle: const TextStyle(
+                                  color: Colors.blue,
+                                  fontSize: 16,
+                                  decoration: TextDecoration.underline,
+                                ),
                               ),
                             ),
                     ),
@@ -937,58 +853,63 @@ b) If the user's question is about any PTE institution, respond only with releva
                 },
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(10.0),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.2),
+                    blurRadius: 5,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
               child: Row(
                 children: [
+                  IconButton(
+                    icon: const Icon(Icons.add, color: Colors.grey),
+                    onPressed: () {
+                      // Add attachment functionality here if needed
+                    },
+                  ),
                   Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        boxShadow: _messageController.text.isNotEmpty || FocusScope.of(context).hasFocus
-                            ? [
-                                BoxShadow(
-                                  color: Colors.green.withOpacity(0.5),
-                                  blurRadius: 10,
-                                  spreadRadius: 2,
-                                ),
-                              ]
-                            : [],
+                    child: TextField(
+                      controller: _messageController,
+                      decoration: const InputDecoration(
+                        hintText: 'PTE queries',
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(vertical: 10),
                       ),
-                      child: TextField(
-                        controller: _messageController,
-                        decoration: InputDecoration(
-                          hintText: _getHintText(_selectedLanguage),
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(25),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                        onSubmitted: (_) => _sendMessage(),
-                      ),
+                      onSubmitted: (_) => _sendMessage(),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  _buildCustomButton(
+                  IconButton(
+                    icon: Icon(
+                      _isListening ? Icons.mic_off : Icons.mic,
+                      color: _isListening ? Colors.red : Colors.grey,
+                    ),
+                    onPressed: _listen,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.send, color: Colors.blue),
                     onPressed: _sendMessage,
-                    icon: Icons.send,
-                    backgroundColor: Colors.green[700]!,
-                  ),
-                  const SizedBox(width: 8),
-                  ScaleTransition(
-                    scale: _isListening ? _micPulseAnimation : Tween<double>(begin: 1.0, end: 1.0).animate(_animationController),
-                    child: _buildCustomButton(
-                      onPressed: _listen,
-                      icon: _isListening ? Icons.mic_off : Icons.mic,
-                      backgroundColor: _isListening ? Colors.red : Colors.green[700]!,
-                    ),
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+          const Padding(
+            padding: EdgeInsets.only(bottom: 10),
+            child: Text(
+              'Englishfirm AI can make mistakes. Check important info.',
+              style: TextStyle(color: Colors.grey, fontSize: 10),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1017,14 +938,6 @@ b) If the user's question is about any PTE institution, respond only with releva
     } else {
       setState(() => _isListening = false);
       _speech.stop();
-    }
-  }
-
-  String _getHintText(String locale) {
-    switch (locale) {
-      case 'en-US':
-      default:
-        return 'Type a message...';
     }
   }
 }
