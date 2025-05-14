@@ -28,3 +28,4 @@ samples, guidance on mobile development, and a full API reference.
 # gpt-3.5-turbo-english-chat-only
 # model-selection
 # web-search
+# google-sign-in
