@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../providers/auth_provider.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
@@ -84,65 +85,74 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> with SingleTick
         decoration: BoxDecoration(
           color: Colors.white,
         ),
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: Image.asset(
-                    'assets/images/logo.jpeg',
-                    width: 140,
-                    height: 140,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                SlideTransition(
-                  position: _slideAnimation,
-                  child: Card(
-                    elevation: 4.0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
-                    color: Colors.white.withOpacity(0.9),
-                    shadowColor: Colors.blue[200]!.withOpacity(0.3),
-                    child: Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Reset Your Password',
-                            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                                  color: const Color.fromARGB(255, 5, 5, 5),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: Image.asset(
+                            'assets/images/logo.jpeg',
+                            width: 140,
+                            height: 140,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        SlideTransition(
+                          position: _slideAnimation,
+                          child: Card(
+                            elevation: 4.0,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
+                            color: Colors.white.withOpacity(0.9),
+                            shadowColor: Colors.blue[200]!.withOpacity(0.3),
+                            child: Padding(
+                              padding: const EdgeInsets.all(24.0),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Reset Your Password',
+                                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                                          color: const Color.fromARGB(255, 5, 5, 5),
+                                        ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    'Enter your email address to receive a password reset link.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(color: Colors.black87),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  CustomTextField(
+                                    controller: _emailController,
+                                    labelText: 'Email',
+                                    prefixIcon: Icons.email,
+                                  ),
+                                  const SizedBox(height: 24),
+                                  GestureDetector(
+                                    onTapDown: (_) => _animationController.reverse(),
+                                    onTapUp: (_) {
+                                      _animationController.forward();
+                                      _resetPassword();
+                                    },
+                                    onTapCancel: () => _animationController.forward(),
+                                    child: ScaleTransition(
+                                      scale: _scaleAnimation,
+                                      child: CustomButton(
+                                        text: 'Send Reset Link',
+                                        onPressed: _resetPassword,
+                                        isLoading: _isLoading,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                                 ),
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'Enter your email address to receive a password reset link.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.black87),
-                          ),
-                          const SizedBox(height: 24),
-                          CustomTextField(
-                            controller: _emailController,
-                            labelText: 'Email',
-                            prefixIcon: Icons.email,
-                          ),
-                          const SizedBox(height: 24),
-                          GestureDetector(
-                            onTapDown: (_) => _animationController.reverse(),
-                            onTapUp: (_) {
-                              _animationController.forward();
-                              _resetPassword();
-                            },
-                            onTapCancel: () => _animationController.forward(),
-                            child: ScaleTransition(
-                              scale: _scaleAnimation,
-                              child: CustomButton(
-                                text: 'Send Reset Link',
-                                onPressed: _resetPassword,
-                                isLoading: _isLoading,
                               ),
                             ),
                           ),
@@ -151,8 +161,23 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> with SingleTick
                     ),
                   ),
                 ),
-              ],
-            ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: TextButton(
+                  onPressed: () async {
+                    await launchUrl(Uri.parse('https://englishfirm.com/privacy-policy/'));
+                  },
+                  child: Text(
+                    'Privacy Policy',
+                    style: TextStyle(
+                      color: Colors.blue[600],
+                      fontSize: 14,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

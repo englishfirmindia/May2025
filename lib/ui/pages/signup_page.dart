@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../providers/auth_provider.dart';
 import '../../ui/widgets/custom_text_field.dart';
 import '../../ui/widgets/custom_button.dart';
@@ -115,115 +116,139 @@ class _SignupPageState extends State<SignupPage> with SingleTickerProviderStateM
         decoration: BoxDecoration(
           color: Colors.white,
         ),
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: Image.asset(
-                    'assets/images/logo.jpeg',
-                    width: 140,
-                    height: 140,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                SlideTransition(
-                  position: _slideAnimation,
-                  child: Card(
-                    elevation: 4.0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
-                    color: Colors.white.withOpacity(0.9),
-                    shadowColor: Colors.blue[200]!.withOpacity(0.3),
-                    child: Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Create an Account',
-                            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                                  color: const Color.fromARGB(255, 5, 5, 5),
-                                ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: Image.asset(
+                            'assets/images/logo.jpeg',
+                            width: 140,
+                            height: 140,
                           ),
-                          const SizedBox(height: 30),
-                          CustomTextField(
-                            controller: _nameController,
-                            labelText: 'Full Name',
-                            prefixIcon: Icons.person,
-                          ),
-                          const SizedBox(height: 16),
-                          CustomTextField(
-                            controller: _emailController,
-                            labelText: 'Email',
-                            prefixIcon: Icons.email,
-                          ),
-                          const SizedBox(height: 16),
-                          CustomTextField(
-                            controller: _passwordController,
-                            labelText: 'Password',
-                            prefixIcon: Icons.lock,
-                            obscureText: _obscurePassword,
-                            onToggleObscure: () => setState(() => _obscurePassword = !_obscurePassword),
-                          ),
-                          if (_passwordStrength.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Password Strength: $_passwordStrength',
-                                  style: TextStyle(
-                                    color: _passwordStrength == 'Weak'
-                                        ? Colors.red
-                                        : _passwordStrength == 'Medium'
-                                            ? Colors.orange
-                                            : Colors.green[700],
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
+                        ),
+                        const SizedBox(height: 20),
+                        SlideTransition(
+                          position: _slideAnimation,
+                          child: Card(
+                            elevation: 4.0,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
+                            color: Colors.white.withOpacity(0.9),
+                            shadowColor: Colors.blue[200]!.withOpacity(0.3),
+                            child: Padding(
+                              padding: const EdgeInsets.all(24.0),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'Create an Account',
+                                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                                          color: const Color.fromARGB(255, 5, 5, 5),
+                                        ),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 30),
+                                  CustomTextField(
+                                    controller: _nameController,
+                                    labelText: 'Full Name',
+                                    prefixIcon: Icons.person,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  CustomTextField(
+                                    controller: _emailController,
+                                    labelText: 'Email',
+                                    prefixIcon: Icons.email,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  CustomTextField(
+                                    controller: _passwordController,
+                                    labelText: 'Password',
+                                    prefixIcon: Icons.lock,
+                                    obscureText: _obscurePassword,
+                                    onToggleObscure: () => setState(() => _obscurePassword = !_obscurePassword),
+                                  ),
+                                  if (_passwordStrength.isNotEmpty) ...[
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Password Strength: $_passwordStrength',
+                                          style: TextStyle(
+                                            color: _passwordStrength == 'Weak'
+                                                ? Colors.red
+                                                : _passwordStrength == 'Medium'
+                                                    ? Colors.orange
+                                                    : Colors.green[700],
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                  const SizedBox(height: 16),
+                                  CustomTextField(
+                                    controller: _confirmPasswordController,
+                                    labelText: 'Confirm Password',
+                                    prefixIcon: Icons.lock,
+                                    obscureText: _obscureConfirmPassword,
+                                    onToggleObscure: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  GestureDetector(
+                                    onTapDown: (_) => _animationController.reverse(),
+                                    onTapUp: (_) {
+                                      _animationController.forward();
+                                      _signup();
+                                    },
+                                    onTapCancel: () => _animationController.forward(),
+                                    child: ScaleTransition(
+                                      scale: _scaleAnimation,
+                                      child: CustomButton(text: 'Sign Up', onPressed: _signup),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  TextButton(
+                                    onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+                                    child: Text(
+                                      'Already have an account? Login',
+                                      style: TextStyle(color: Color.fromARGB(255, 0, 2, 0)),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ],
-                          const SizedBox(height: 16),
-                          CustomTextField(
-                            controller: _confirmPasswordController,
-                            labelText: 'Confirm Password',
-                            prefixIcon: Icons.lock,
-                            obscureText: _obscureConfirmPassword,
-                            onToggleObscure: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
                           ),
-                          const SizedBox(height: 24),
-                          GestureDetector(
-                            onTapDown: (_) => _animationController.reverse(),
-                            onTapUp: (_) {
-                              _animationController.forward();
-                              _signup();
-                            },
-                            onTapCancel: () => _animationController.forward(),
-                            child: ScaleTransition(
-                              scale: _scaleAnimation,
-                              child: CustomButton(text: 'Sign Up', onPressed: _signup),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          TextButton(
-                            onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
-                            child: Text(
-                              'Already have an account? Login',
-                              style: TextStyle(color: Color.fromARGB(255, 0, 2, 0)),
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: TextButton(
+                  onPressed: () async {
+                    await launchUrl(Uri.parse('https://englishfirm.com/privacy-policy/'));
+                  },
+                  child: Text(
+                    'Privacy Policy',
+                    style: TextStyle(
+                      color: Colors.blue[600],
+                      fontSize: 14,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

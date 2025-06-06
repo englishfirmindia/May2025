@@ -1,20 +1,18 @@
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:in_app_update/in_app_update.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
-import 'login_page.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'login_page.dart';
+import '../../services/ai_service.dart';
+import '../../services/speech_service.dart'; // Import SpeechService
 
 class UserPage extends StatefulWidget {
   const UserPage({super.key});
@@ -28,23 +26,26 @@ class _UserPageState extends State<UserPage> with SingleTickerProviderStateMixin
   final List<Map<String, dynamic>> _messages = [];
   final ScrollController _scrollController = ScrollController();
   String? apiKey;
-  late stt.SpeechToText _speech;
   bool _isListening = false;
   bool _isBotTyping = false;
   bool _isLoading = true;
   String _selectedLanguage = 'en-US';
+  late AiService _aiService;
+  late SpeechService _speechService; // Add SpeechService
 
   late AnimationController _animationController;
   late Animation<double> _micPulseAnimation;
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
     super.initState();
-    _speech = stt.SpeechToText();
+    _speechService = SpeechService(); // Initialize SpeechService
     _loadEnv();
     _loadPreferences();
+    _loadMessages();
     _setupPushNotifications();
     _checkForUpdates();
 
@@ -71,6 +72,7 @@ class _UserPageState extends State<UserPage> with SingleTickerProviderStateMixin
       await dotenv.load(fileName: "assets/.env");
       setState(() {
         apiKey = dotenv.env['GEMINI_API_KEY'];
+        _aiService = AiService(apiKey: apiKey);
         _isLoading = false;
         if (apiKey == null || apiKey!.isEmpty) {
           Fluttertoast.showToast(msg: "API Key not found in .env file");
@@ -90,6 +92,37 @@ class _UserPageState extends State<UserPage> with SingleTickerProviderStateMixin
     setState(() {
       _selectedLanguage = prefs.getString('language') ?? 'en-US';
     });
+  }
+
+  Future<void> _loadMessages() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('chat_messages')
+          .where('userId', isEqualTo: user.uid)
+          .orderBy('timestamp', descending: false)
+          .get();
+
+      setState(() {
+        _messages.clear();
+        for (var doc in querySnapshot.docs) {
+          _messages.add(doc.data());
+        }
+      });
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      });
+    } catch (e) {
+      Fluttertoast.showToast(msg: "Failed to load messages: $e");
+      debugPrint('Error in _loadMessages: $e');
+    }
   }
 
   Future<void> _setupPushNotifications() async {
@@ -238,7 +271,7 @@ class _UserPageState extends State<UserPage> with SingleTickerProviderStateMixin
       _messageController.clear();
 
       setState(() => _isBotTyping = true);
-      String botResponse = await _getAIResponse(message);
+      String botResponse = await _aiService.getAIResponse(message);
       setState(() => _isBotTyping = false);
 
       final botMessageData = {
@@ -263,47 +296,6 @@ class _UserPageState extends State<UserPage> with SingleTickerProviderStateMixin
       setState(() => _isBotTyping = false);
       Fluttertoast.showToast(msg: "Failed to process message: $e");
       debugPrint('Error in _sendMessage: $e');
-    }
-  }
-
-  Future<String> _getAIResponse(String userInput) async {
-    final String url ="https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:generateContent?key=$apiKey";
-
-
-    final Map<String, dynamic> requestBody = {
-      "contents": [
-        {
-          "parts": [
-            {
-              "text": "You are an AI assistant created by the Englishfirm AI team to help students prepare for the PTE exam. "
-                  "Your responses should be clear, concise, and relevant to PTE-related topics. "
-                  "If a question is unrelated to the PTE exam, respond with: 'I am designed to answer PTE-related questions only.' "
-                  "\n\nStudent's query:\n\n$userInput"
-            }
-          ]
-        }
-      ]
-    };
-
-    try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode(requestBody),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        String aiResponse = data["candidates"][0]["content"]["parts"][0]["text"];
-        aiResponse = aiResponse.replaceAll(RegExp(r'[*#]'), '');
-        return aiResponse;
-      } else {
-        print('AI response failed: ${response.statusCode} - ${response.body}');
-        return "Sorry, I couldn't process your request.";
-      }
-    } catch (e) {
-      print('Error in _getAIResponse: $e');
-      return "Error: ${e.toString()}";
     }
   }
 
@@ -726,13 +718,16 @@ class _UserPageState extends State<UserPage> with SingleTickerProviderStateMixin
       );
     }
 
+    final user = FirebaseAuth.instance.currentUser;
+
     return Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         leading: IconButton(
           icon: const Icon(Icons.menu, color: Colors.black),
           onPressed: () {
-            // You can implement a drawer or menu action here
+            _scaffoldKey.currentState?.openDrawer();
           },
         ),
         title: const Text(
@@ -777,6 +772,110 @@ class _UserPageState extends State<UserPage> with SingleTickerProviderStateMixin
             ],
           ),
         ],
+      ),
+      drawer: Drawer(
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16.0),
+              color: Colors.blue[800],
+              child: const Text(
+                'Englishfirm AI Assistant',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold),
+              ),
+            ),
+            Expanded(
+              child: _messages.isEmpty
+                  ? const Center(child: Text('No messages yet.'))
+                  : ListView.builder(
+                      itemCount: _messages.length,
+                      itemBuilder: (context, index) {
+                        final message = _messages[index];
+                        final isUser = message['isUser'] ?? false;
+                        return ListTile(
+                          leading: Icon(
+                            isUser ? Icons.person : Icons.assistant,
+                            color: isUser ? Colors.blue : Colors.green,
+                          ),
+                          title: Text(
+                            message['text'] ?? '',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                          subtitle: Text(
+                            message['timestamp'] != null
+                                ? (message['timestamp'] as DateTime).toString()
+                                : 'Unknown time',
+                            style: const TextStyle(color: Colors.grey, fontSize: 12),
+                          ),
+                          onTap: () {
+                            _scrollController.animateTo(
+                              index * 60.0,
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                            _scaffoldKey.currentState?.closeDrawer();
+                          },
+                        );
+                      },
+                    ),
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.account_circle, color: Colors.black),
+              title: const Text('Account Details'),
+              onTap: () {
+                _scaffoldKey.currentState?.openDrawer();
+                _showAccountDetails();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.person, color: Colors.black),
+              title: const Text('Profile'),
+              onTap: () {
+                _scaffoldKey.currentState?.openDrawer();
+                _showProfile();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.lock, color: Colors.black),
+              title: const Text('Change Password'),
+              onTap: () {
+                _scaffoldKey.currentState?.openDrawer();
+                _showChangePassword();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.red),
+              title: const Text('Delete Account'),
+              onTap: () {
+                _scaffoldKey.currentState?.openDrawer();
+                _showDeleteAccount();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.clear_all, color: Colors.red),
+              title: const Text('Clear Chat History'),
+              onTap: () {
+                _scaffoldKey.currentState?.openDrawer();
+                _showClearChatHistory();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.black),
+              title: const Text('Logout'),
+              onTap: () {
+                _scaffoldKey.currentState?.openDrawer();
+                _logout();
+              },
+            ),
+          ],
+        ),
       ),
       body: Column(
         children: [
@@ -892,7 +991,7 @@ class _UserPageState extends State<UserPage> with SingleTickerProviderStateMixin
                       _isListening ? Icons.mic_off : Icons.mic,
                       color: _isListening ? Colors.red : Colors.grey,
                     ),
-                    onPressed: _listen,
+                    onPressed: _toggleListening,
                   ),
                   IconButton(
                     icon: const Icon(Icons.send, color: Colors.blue),
@@ -914,30 +1013,23 @@ class _UserPageState extends State<UserPage> with SingleTickerProviderStateMixin
     );
   }
 
-  void _listen() async {
+  void _toggleListening() async {
     if (!_isListening) {
-      bool available = await _speech.initialize(
-        onStatus: (val) => print('onStatus: $val'),
-        onError: (val) => print('onError: $val'),
-      );
+      bool available = await _speechService.initialize();
       if (available) {
         setState(() => _isListening = true);
-        _speech.listen(
+        await _speechService.startListening(
           localeId: _selectedLanguage,
-          onResult: (val) => setState(() {
-            _messageController.text = val.recognizedWords;
-            if (val.finalResult) {
-              _isListening = false;
-              _sendMessage();
-            }
-          }),
+          onResult: (text) => setState(() => _messageController.text = text),
+          onFinalResult: () {
+            setState(() => _isListening = false);
+            _sendMessage();
+          },
         );
-      } else {
-        Fluttertoast.showToast(msg: "Speech recognition not available");
       }
     } else {
       setState(() => _isListening = false);
-      _speech.stop();
+      await _speechService.stopListening();
     }
   }
 }
