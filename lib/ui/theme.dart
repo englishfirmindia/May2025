@@ -51,11 +51,11 @@ class CustomThemeColors extends ThemeExtension<CustomThemeColors> {
 final ThemeData appTheme = ThemeData(
   primarySwatch: Colors.deepPurple,
   scaffoldBackgroundColor: Colors.white,
-  cardTheme: CardTheme(
+  cardTheme: CardThemeData(
     elevation: 4.0,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
-    color: Colors.white.withValues(alpha: 0.9),
-    shadowColor: Colors.blue[200]!.withValues(alpha: 0.3),
+    surfaceTintColor: Colors.white.withOpacity(0.9),
+    shadowColor: Colors.blue[200]!.withOpacity(0.3),
   ),
   appBarTheme: const AppBarTheme(
     backgroundColor: Colors.white,
@@ -96,7 +96,7 @@ final ThemeData appTheme = ThemeData(
   ),
   extensions: [
     CustomThemeColors(
-      shadowColor: Colors.blue[200]!.withValues(alpha: 0.3),
+      shadowColor: Colors.blue[200]!.withOpacity(0.3),
       linkTextColor: Colors.blue[600]!,
       weakPasswordColor: Colors.red,
       mediumPasswordColor: Colors.orange,
